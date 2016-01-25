@@ -5,18 +5,25 @@
 # written by tangkk
 
 import sys
-inlyrics = sys.argv[1]
-inchords = sys.argv[2]
-outsheet = sys.argv[3]
+songname = sys.argv[1]
+inlyrics = songname + '.lrc'
+inchords = songname + '.txt'
+outsheet = songname + '.ch'
+# inlyrics = sys.argv[1]
+# inchords = sys.argv[2]
+# outsheet = sys.argv[3]
 
 def get_sec(s):
     l1,l2 = s.split(':')
-    l21,l22 = l2.split('.')
+    
+    if l2.find('.')==1:
+        l21,l22 = l2.split('.')
+    else:
+        l21 = l2
+        l22 = 0
     ret = float(l1) * 60 + float(l21) * 1 + float(l22)*0.6 / 100
     return ret
 
-# TODO: 1. sort the lyrics in terms of secs; 2. expand lyrics when there're multiple secs
-# 3. ignore irrelavant information
 def readlyrics(inlyrics):
     title = ''
     seclist = []
@@ -26,8 +33,10 @@ def readlyrics(inlyrics):
         sps = line.split(']')
         
         if len(sps)==2 and sps[0].find('ti') == 1:
-            _,title = sp1.split(':')
-        elif len(sps)>=2 and len(sps[1])!=0:
+            _,title = sps[0].split(':')
+        elif len(sps)>=2 and (sps[0].find('ar')==1 or sps[0].find('al')==1 or sps[0].find('by')==1):
+            continue
+        elif len(sps)>=2:
             # append every sec and lyrics
             ly = sps[-1]
             for i in range(len(sps)-1):
@@ -44,6 +53,7 @@ def readlyrics(inlyrics):
     return title, newseclist, newlylist
 
 # note that the annotation does not fill the end time (only start time and the chord, separated by \t)
+# TODO: 1. modify the chords so that it match human's reading behavior
 def readchords(inchords):
     seclist = []
     chlist = []
@@ -65,6 +75,23 @@ if len(title) == 0:
     outstr = ''
 else:
     outstr = title + '\n'
+    
+# intro part
+curlysec = lyseclist[0]    
+curline = ''
+while chcount < len(chseclist):
+    j = chcount
+    curchsec = chseclist[j]
+    curch = chlist[j]
+    if curchsec < curlysec:
+        chcount += 1
+        curline += curch.strip()
+        curline += ' | '
+    else:
+        break
+curline += '\n'
+outstr += curline   
+
 # the chord of this line of lyrics appears before the next line of lyrics
 for i in range(len(lyseclist)-1):
     curlysec = lyseclist[i]
@@ -72,7 +99,6 @@ for i in range(len(lyseclist)-1):
     curly = lylist[i]
     nextly = lylist[i+1]
     curline = ''
-    linebreak = 0
     while chcount < len(chseclist):
         j = chcount
         curchsec = chseclist[j]
@@ -81,20 +107,23 @@ for i in range(len(lyseclist)-1):
             chcount += 1
             curline += curch.strip()
             curline += ' | '
-            linebreak += 1
-        elif curchsec < curlysec:
-            chcount += 1
-            linebreak = 0
         else:
-            linebreak -= 1
             break
-    if linebreak >= 0:
-        curline += '\n'
+    curline += '\n'
     curline += curly
-    # if linebreak >= 0:
-        # curline += '\n'
     outstr += curline
     
+# outro
+curline = '\n'
+while chcount < len(chseclist):
+    j = chcount
+    curchsec = chseclist[j]
+    curch = chlist[j]
+    chcount += 1
+    curline += curch.strip()
+    curline += ' | '
+   
+outstr += curline   
 
 fw = open(outsheet,'w', encoding="utf8")
 fw.write(outstr)
