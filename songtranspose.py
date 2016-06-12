@@ -52,6 +52,17 @@ def transposechord(inchord, transpose, newkey):
         inroot = inchord[0]
         if len(inchord) > 1:
             suffix = inchord[1:len(inchord)]
+    
+    # transform equivalent root symbols
+    if inroot == 'E#':
+        inroot = 'F'
+    if inroot == 'B#':
+        inroot = 'C'
+    if inroot == 'Fb':
+        inroot = 'E'
+    if inroot == 'Cb':
+        inroot = 'B'
+            
     if inroot in chromatic_sharp:
         inIdx = chromatic_sharp.index(inroot)
     else:
